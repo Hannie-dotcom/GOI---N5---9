@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Minna no Nihongo - Bài 9</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body {
+            background: linear-gradient(rgba(255, 245, 247, 0.55), rgba(240, 220, 225, 0.65)),
+                        url('https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Hiệu ứng Cánh hoa anh đào rơi */
+        .sakura-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .petal {
+            position: absolute;
+            background: #ffb7c5;
+            border-radius: 15px 0 15px 0;
+            opacity: 0.75;
+            filter: drop-shadow(0 2px 4px rgba(216, 90, 127, 0.2));
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translate(0, -10px) rotate(0deg); opacity: 0.8; }
+            100% { transform: translate(120px, 105vh) rotate(360deg); opacity: 0; }
+        }
+
+        .app-card {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            width: 100%;
+            max-width: 460px;
+            border-radius: 28px;
+            padding: 32px 24px;
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(180, 100, 120, 0.15);
+            text-align: center;
+        }
+
+        .header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #b06d7e; margin-bottom: 20px; }
+
+        /* Flashcard Lật 3D */
+        .flashcard-wrapper {
+            perspective: 1000px;
+            width: 100%;
+            height: 230px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(216, 90, 127, 0.12);
+        }
+        .flashcard.flipped { transform: rotateY(180deg); }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #f2d5db;
+            background: #ffffff;
+            padding: 16px;
+        }
+        .card-front { color: #3a2e30; }
+        .card-back {
+            background: #fff8f9;
+            color: #d85a7f;
+            transform: rotateY(180deg);
+        }
+
+        .kanji-text { font-size: 36px; font-weight: 700; letter-spacing: 2px; }
+        .hint-text { font-size: 12px; color: #b06d7e; margin-top: 10px; opacity: 0.8; }
+        
+        .hiragana-text { font-size: 22px; font-weight: 600; color: #d85a7f; margin-bottom: 2px; }
+        .meaning-text { font-size: 18px; font-weight: 700; color: #4a383b; margin-bottom: 10px; }
+        
+        /* Khung câu ví dụ */
+        .example-box {
+            background: rgba(216, 90, 127, 0.08);
+            border-left: 3px solid #d85a7f;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #5a4046;
+            text-align: left;
+            width: 100%;
+        }
+        .example-jp { font-weight: 600; color: #3a2e30; }
+        .example-vi { font-size: 12px; color: #7a5c63; }
+
+        /* Danh sách 4 lựa chọn tiếng Việt */
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .opt-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1.5px solid #f2d5db;
+            color: #4a383b;
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .opt-btn:hover:not(:disabled) { background: #fff5f7; border-color: #d85a7f; transform: translateY(-1px); }
+        .opt-btn.correct { background: #e8f5e9 !important; border-color: #66bb6a !important; color: #2e7d32 !important; }
+        .opt-btn.wrong { background: #ffebee !important; border-color: #ef5350 !important; color: #c62828 !important; }
+        .opt-btn:disabled { cursor: default; }
+
+        .controls { display: flex; gap: 10px; margin-top: 16px; }
+        .nav-btn {
+            flex: 1; padding: 12px; border: none; background: #f2d5db; color: #8c5665;
+            font-weight: 600; border-radius: 14px; cursor: pointer; transition: 0.2s;
+        }
+        .nav-btn:hover { background: #d85a7f; color: white; }
+
+        /* Màn hình Chúc mừng khi hoàn thành */
+        .congrats-card {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+        }
+        .congrats-icon { font-size: 60px; margin-bottom: 12px; }
+        .congrats-title { font-size: 24px; font-weight: 700; color: #d85a7f; margin-bottom: 8px; }
+        .congrats-desc { font-size: 15px; color: #5a4046; margin-bottom: 24px; line-height: 1.5; }
+        .restart-btn {
+            background: linear-gradient(135deg, #e07a9e 0%, #d85a7f 100%);
+            color: white; border: none; padding: 14px 32px; border-radius: 16px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(216, 90, 127, 0.3);
+        }
+        .restart-btn:hover { opacity: 0.95; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <div class="sakura-container" id="sakura-box"></div>
+
+    <div class="app-card">
+        <!-- Khung học Flashcard chính -->
+        <div id="learning-section">
+            <div class="header">
+                <span id="lesson-title">Minna no Nihongo - Bài 9</span>
+                <span id="card-count">1 / 34</span>
+            </div>
+
+            <!-- Flashcard lật 3D -->
+            <div class="flashcard-wrapper" onclick="toggleFlip()">
+                <div class="flashcard" id="card">
+                    <div class="card-front">
+                        <div class="kanji-text" id="kanji-display">わかります</div>
+                        <div class="hint-text">💡 Chạm vào đây để lật xem cách đọc & ví dụ</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="hiragana-text" id="hiragana-display">わかります</div>
+                        <div class="meaning-text" id="meaning-display">Hiểu / Nắm được</div>
+                        <div class="example-box">
+                            <div class="example-jp" id="example-jp">わたしは 日本語が 少し わかります。</div>
+                            <div class="example-vi" id="example-vi">Tôi hiểu một chút tiếng Nhật.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Lựa chọn trắc nghiệm tiếng Việt -->
+            <div class="options-grid" id="options-box">
+                <button class="opt-btn" onclick="checkAnswer(this)"></button>
+                <button class="opt-btn" onclick="checkAnswer(this)"></button>
+                <button class="opt-btn" onclick="checkAnswer(this)"></button>
+                <button class="opt-btn" onclick="checkAnswer(this)"></button>
+            </div>
+
+            <!-- Điều hướng -->
+            <div class="controls">
+                <button class="nav-btn" onclick="prevCard()">← Thẻ trước</button>
+                <button class="nav-btn" onclick="nextCard()">Thẻ tiếp →</button>
+            </div>
+        </div>
+
+        <!-- Màn hình Chúc mừng sau khi hoàn thành -->
+        <div class="congrats-card" id="congrats-section">
+            <div class="congrats-icon">🌸🎉</div>
+            <div class="congrats-title">おめでとうございます!</div>
+            <div class="congrats-desc">
+                Chúc mừng bạn đã hoàn thành trọn bộ <strong>34 từ vựng Bài 9</strong>!<br>
+                Điểm số trả lời đúng: <strong id="score-text" style="color:#d85a7f;">0/34</strong>
+            </div>
+            <button class="restart-btn" onclick="restartLesson()">🔄 Học lại Bài 9</button>
+        </div>
+    </div>
+
+    <script>
+        function createPetal() {
+            const box = document.getElementById('sakura-box');
+            const p = document.createElement('div');
+            p.classList.add('petal');
+            p.style.width = Math.random() * 8 + 8 + 'px';
+            p.style.height = Math.random() * 10 + 10 + 'px';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = Math.random() * 4 + 6 + 's';
+            box.appendChild(p);
+            setTimeout(() => p.remove(), 10000);
+        }
+        setInterval(createPetal, 400);
+
+        // Danh sách từ vựng Bài 9 trích xuất chính xác từ sách Minna no Nihongo I
+        const vocabList = [
+            { kanji: 'わかります', hiragana: 'わかります', meaning: 'Hiểu / Nắm được', exJp: 'わたしは 日本語が 少し わかります。', exVi: 'Tôi hiểu một chút tiếng Nhật.' },
+            { kanji: 'あります', hiragana: 'あります', meaning: 'Có (sở hữu)', exJp: '細かい お金が ありますか。', exVi: 'Anh/Chị có tiền lẻ không?' },
+            { kanji: '好き［な］', hiragana: 'すき', meaning: 'Thích', exJp: 'わたしは イタリア料理が 好きです。', exVi: 'Tôi thích món ăn Ý.' },
+            { kanji: '嫌い［な］', hiragana: 'きらい', meaning: 'Ghét / Không thích', exJp: 'お酒は 好きじゃありません。', exVi: 'Tôi không thích rượu.' },
+            { kanji: '上手［な］', hiragana: 'じょうず', meaning: 'Giỏi / Khéo', exJp: 'カリナさんは 絵が 上手です。', exVi: 'Chị Karina vẽ tranh rất giỏi.' },
+            { kanji: '下手［な］', hiragana: 'へた', meaning: 'Kém / Dở', exJp: 'わたしは スポーツが 下手です。', exVi: 'Tôi chơi thể thao kém.' },
+            { kanji: '飲み物', hiragana: 'のみもの', meaning: 'Đồ uống', exJp: '冷たい 飲み物が 好きです。', exVi: 'Tôi thích đồ uống lạnh.' },
+            { kanji: '料理', hiragana: 'りょうり', meaning: 'Món ăn / Việc nấu ăn', exJp: 'どんな 料理が 好きですか。', exVi: 'Anh/Chị thích món ăn nào?' },
+            { kanji: 'スポーツ', hiragana: 'すぽーつ', meaning: 'Thể thao', exJp: 'どんな スポーツが 好きですか。', exVi: 'Anh/Chị thích môn thể thao nào?' },
+            { kanji: '野球', hiragana: 'やきゅう', meaning: 'Bóng chày', exJp: '野球が 好きです。', exVi: 'Tôi thích môn bóng chày.' },
+            { kanji: 'ダンス', hiragana: 'だんす', meaning: 'Nhảy / Khiêu vũ', exJp: 'ダンスが 上手ですね。', exVi: 'Anh/Chị nhảy giỏi nhỉ.' },
+            { kanji: '旅行', hiragana: 'りょこう', meaning: 'Du lịch / Chuyến du lịch', exJp: '旅行が 好きです。', exVi: 'Tôi thích đi du lịch.' },
+            { kanji: '音楽', hiragana: 'おんがく', meaning: 'Âm nhạc', exJp: '音楽を 聞きます。', exVi: 'Tôi nghe nhạc.' },
+            { kanji: '歌', hiragana: 'うた', meaning: 'Bài hát', exJp: '日本の 歌を 歌います。', exVi: 'Tôi hát bài hát Nhật Bản.' },
+            { kanji: 'クラシック', hiragana: 'くらしっく', meaning: 'Nhạc cổ điển', exJp: 'クラシックの コンサートへ 行きます。', exVi: 'Tôi đi xem hòa nhạc cổ điển.' },
+            { kanji: 'ジャズ', hiragana: 'じゃず', meaning: 'Nhạc Jazz', exJp: 'ジャズが 好きです。', exVi: 'Tôi thích nhạc Jazz.' },
+            { kanji: 'コンサート', hiragana: 'こんさーと', meaning: 'Buổi hòa nhạc', exJp: 'コンサートの チケットを もらいました。', exVi: 'Tôi đã nhận được vé xem hòa nhạc.' },
+            { kanji: 'カラオケ', hiragana: 'からおけ', meaning: 'Karaoke', exJp: 'カラオケへ 行きませんか。', exVi: 'Anh/Chị đi hát karaoke cùng tôi không?' },
+            { kanji: '歌舞伎', hiragana: 'かぶき', meaning: 'Kịch Kabuki', exJp: '歌舞伎を 見ました。', exVi: 'Tôi đã xem kịch Kabuki.' },
+            { kanji: '絵', hiragana: 'え', meaning: 'Tranh / Hội họa', exJp: '絵を かきます。', exVi: 'Tôi vẽ tranh.' },
+            { kanji: '字', hiragana: 'じ', meaning: 'Chữ', exJp: 'きれいな 字ですね。', exVi: 'Chữ đẹp nhỉ.' },
+            { kanji: '漢字', hiragana: 'かんじ', meaning: 'Chữ Hán', exJp: '漢字が わかりません。', exVi: 'Tôi không hiểu chữ Hán.' },
+            { kanji: 'ひらがな', hiragana: 'ひらがな', meaning: 'Chữ Hiragana', exJp: 'ひらがなが できます。', exVi: 'Tôi biết chữ Hiragana.' },
+            { kanji: 'かたかな', hiragana: 'かたかな', meaning: 'Chữ Katakana', exJp: 'かたかなが わかります。', exVi: 'Tôi hiểu chữ Katakana.' },
+            { kanji: 'ローマ字', hiragana: 'ろーまじ', meaning: 'Chữ La Mã', exJp: 'ローマ字で 書きます。', exVi: 'Viết bằng chữ La Mã.' },
+            { kanji: '細かい お金', hiragana: 'こまかい おかね', meaning: 'Tiền lẻ', exJp: '細かい お金が ありません。', exVi: 'Tôi không có tiền lẻ.' },
+            { kanji: 'チケット', hiragana: 'ちけっと', meaning: 'Vé', exJp: 'チケットを 買いました。', exVi: 'Tôi đã mua vé.' },
+            { kanji: '時間', hiragana: 'じかん', meaning: 'Thời gian', exJp: '時間が ありませんから、読みません。', exVi: 'Vì không có thời gian nên tôi không đọc.' },
+            { kanji: '用事', hiragana: 'ようじ', meaning: 'Việc bận / Công chuyện', exJp: '用事が ありますから、早く 帰ります。', exVi: 'Vì có việc bận nên tôi sẽ về sớm.' },
+            { kanji: '約束', hiragana: 'やくそく', meaning: 'Cuộc hẹn / Lời hứa', exJp: '友達と 約束が あります。', exVi: 'Tôi có cuộc hẹn với bạn.' },
+            { kanji: 'アルバイト', hiragana: 'あるばいと', meaning: 'Việc làm thêm', exJp: 'アルバイトを します。', exVi: 'Tôi làm thêm.' },
+            { kanji: 'ご主人', hiragana: 'ごしゅじん', meaning: 'Chồng (người khác)', exJp: 'ご主人は テニスを しますか。', exVi: 'Chồng chị có chơi quần vợt không?' },
+            { kanji: '夫［主人］', hiragana: 'おっと［しゅじん］', meaning: 'Chồng (mình)', exJp: '夫は スポーツが 嫌いです。', exVi: 'Chồng tôi không thích thể thao.' },
+            { kanji: '奥さん', hiragana: 'おくさん', meaning: 'Vợ (người khác)', exJp: '山田さんの 奥さんは フランス語が わかります。', exVi: 'Vợ anh Yamada hiểu tiếng Pháp.' }
+        ];
+
+        const extraDistractors = [
+            "Học tập", "Làm việc", "Nghỉ ngơi", "Bưu điện", "Ngân hàng",
+            "Mỗi sáng", "Thứ hai", "Tối nay", "Căn phòng", "Máy vi tính"
+        ];
+
+        let currentIndex = 0;
+        let answeredCurrent = false;
+        let correctCount = 0;
+
+        function updateCard() {
+            const current = vocabList[currentIndex];
+            document.getElementById('card-count').innerText = `${currentIndex + 1} / ${vocabList.length}`;
+            document.getElementById('kanji-display').innerText = current.kanji;
+            document.getElementById('hiragana-display').innerText = current.hiragana;
+            document.getElementById('meaning-display').innerText = current.meaning;
+            document.getElementById('example-jp').innerText = current.exJp;
+            document.getElementById('example-vi').innerText = current.exVi;
+            
+            document.getElementById('card').classList.remove('flipped');
+            answeredCurrent = false;
+
+            let options = [current.meaning];
+            vocabList.forEach(item => {
+                if (!options.includes(item.meaning) && options.length < 4) {
+                    options.push(item.meaning);
+                }
+            });
+
+            let distractorIndex = 0;
+            while (options.length < 4 && distractorIndex < extraDistractors.length) {
+                let text = extraDistractors[distractorIndex];
+                if (!options.includes(text)) {
+                    options.push(text);
+                }
+                distractorIndex++;
+            }
+
+            options.sort(() => Math.random() - 0.5);
+
+            const btns = document.querySelectorAll('.opt-btn');
+            btns.forEach((btn, i) => {
+                btn.innerText = options[i];
+                btn.className = 'opt-btn';
+                btn.disabled = false;
+            });
+        }
+
+        function toggleFlip() {
+            document.getElementById('card').classList.toggle('flipped');
+        }
+
+        function checkAnswer(btn) {
+            if(answeredCurrent) return;
+            answeredCurrent = true;
+
+            document.getElementById('card').classList.add('flipped');
+
+            if(btn.innerText === vocabList[currentIndex].meaning) {
+                btn.classList.add('correct');
+                correctCount++;
+            } else {
+                btn.classList.add('wrong');
+            }
+
+            const btns = document.querySelectorAll('.opt-btn');
+            btns.forEach(b => b.disabled = true);
+        }
+
+        function nextCard() {
+            if (currentIndex === vocabList.length - 1) {
+                showCongrats();
+                return;
+            }
+            currentIndex++;
+            updateCard();
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            }
+        }
+
+        function showCongrats() {
+            document.getElementById('learning-section').style.display = 'none';
+            document.getElementById('congrats-section').style.display = 'flex';
+            document.getElementById('score-text').innerText = `${correctCount} / ${vocabList.length}`;
+        }
+
+        function restartLesson() {
+            currentIndex = 0;
+            correctCount = 0;
+            document.getElementById('congrats-section').style.display = 'none';
+            document.getElementById('learning-section').style.display = 'block';
+            updateCard();
+        }
+
+        updateCard();
+    </script>
+</body>
+</html>
